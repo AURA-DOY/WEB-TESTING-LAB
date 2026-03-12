@@ -54,7 +54,7 @@ Every lab simulates vulnerabilities you'll find on real bug bounty programs and 
 
 ```bash
 # Clone the repo
-git clone https://github.com/AURA-DOY/vulnlabs.git
+git clone https://github.com/AURA-DOY/WEB-TESTING-LAB
 cd vulnlabs
 
 # Open directly in browser
@@ -76,7 +76,7 @@ That's it. The file runs entirely in your browser with zero dependencies.
 ### Option 2 — Serve via Python (Recommended)
 
 ```bash
-git clone https://github.com/AURA-DOY/vulnlabs.git
+git clone https://github.com/AURA-DOY/WEB-TESTING-LAB
 cd vulnlabs
 
 # Python 3
@@ -91,7 +91,7 @@ python3 -m http.server 8080
 ### Option 3 — Serve via PHP
 
 ```bash
-git clone https://github.com/AURA-DOY/vulnlabs.git
+git clone https://github.com/AURA-DOY/WEB-TESTING-LAB
 cd vulnlabs
 
 php -S localhost:8080
@@ -105,7 +105,7 @@ php -S localhost:8080
 ### Option 4 — Serve via Node.js
 
 ```bash
-git clone https://github.com/AURA-DOY/vulnlabs.git
+git clone https://github.com/AURA-DOY/WEB-TESTING-LAB
 cd vulnlabs
 
 npx serve .
@@ -118,7 +118,7 @@ npx serve .
 ### Option 5 — Kali Linux Quick Start
 
 ```bash
-git clone https://github.com/AURA-DOY/vulnlabs.git
+git clone https://github.com/AURA-DOY/WEB-TESTING-LAB
 cd vulnlabs
 python3 -m http.server 8080 &
 firefox http://localhost:8080/vuln-labs.html
